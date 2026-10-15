@@ -1,2 +1,2 @@
 # spark-triage
-An agentic AI triage assistant with MCP tools and mandatory nurse review.
+An MCP-powered, nurse-supervised triage desk assistant with evidence-grounded priority proposals and an audit trail.
