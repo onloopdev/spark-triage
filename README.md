@@ -1,6 +1,8 @@
 # Spark Triage
 
-Demo Link : https://spark-triage-demo.ambitiousriver-7163fdc4.francecentral.azurecontainerapps.io
+**Hosted demo:** https://spark-triage-demo.ambitiousriver-7163fdc4.francecentral.azurecontainerapps.io
+
+**Privacy note:** The hosted demo is separate from the local setup described below. Do not enter real patient information into the hosted demo. Review the deployment configuration and the model provider's data-handling terms before using any non-synthetic data.
 
 An agentic assistant for the triage desk of a busy public outpatient department. It reads an intake card, scores it on the **South African Triage Scale (adult)**, and puts a **sourced, pending priority** in front of the triage nurse. The nurse approves, overrides or rejects it. Nothing moves in the queue until a named clinician has decided.
 
@@ -20,7 +22,9 @@ In one Nigerian general hospital, outpatients waited 104 minutes just to have th
 
 One command: it creates a virtualenv, installs the project, pulls the open-weights model, writes the synthetic intake cards, runs the tests and opens the nurse's desk in your browser at http://127.0.0.1:8000.
 
-Prerequisites: Python 3.11+, Node.js 18+ (for `npx`) and [Ollama](https://ollama.com), running. On Windows, run it from **Git Bash**. Everything runs on the desk computer; nothing is sent to the internet once the model is downloaded.
+Prerequisites for local use: Python 3.11+, Node.js 18+ (for `npx`) and [Ollama](https://ollama.com), running. On Windows, run `./run.sh` from **Git Bash**.
+
+In the local configuration, the application connects to the Ollama service configured by `OLLAMA_HOST` (localhost by default). Model downloads and other setup steps require network access. After setup, inference can remain local when Ollama is running locally and the application is not configured to use a remote service. Check your environment variables before handling sensitive data.
 
 Default model: `qwen2.5:3b` (about 1.9 GB), chosen to run on an ordinary 8 GB laptop with no GPU. Pick another with `TRIAGE_MODEL=granite3.3:2b ./run.sh`.
 
@@ -67,6 +71,14 @@ Proposals made from any client still wait for the nurse: the server has no appro
 .venv/Scripts/python evals/run_evals.py --runs 2 --models qwen2.5:3b granite3.3:2b
 ```
 
+## Deployment modes and data handling
+
+**Local development:** The application defaults to `http://localhost:11434` and `qwen2.5:3b`. With a local Ollama instance and synthetic intake cards, model inference runs on the machine hosting Ollama. Network access may still be needed to install dependencies or download a model.
+
+**Hosted demo:** The repository's `Dockerfile` sets `OLLAMA_HOST=https://ollama.com` and `TRIAGE_MODEL=gemma4:31b`. This configures a remote Ollama endpoint rather than the local default. Do not assume hosted-demo requests remain on the desk computer or within a particular country. Confirm the hosting region, provider data handling, logging, retention and access controls before using any sensitive information.
+
+**For demonstrations and testing, use synthetic patient data only.** The project is not validated for autonomous clinical use. A qualified clinician must review every proposed priority.
+
 ## What happens for one patient
 
 1. **plan**: the model writes a short plan before calling anything.
@@ -95,7 +107,7 @@ tests/            deterministic tests (scoring, sourcing, gate, audit, MCP over 
 * Agent layer (LangGraph + Ollama + filesystem server): see EVALS.md for what has and has not been run.
 * SATS thresholds were transcribed by hand from the published adult chart and still need a line-by-line check by a clinician.
 * Adult chart only. Children are flagged to the nurse, not scored.
-* All patient data in this repo is synthetic. Do not put real patient data in it without consent; health data must stay in-country, which is why the model runs locally.
+* All patient data in this repo is synthetic. Keep real patient information out of the repository and demo. Consent alone does not establish that a deployment meets applicable health-data, privacy or data-residency requirements. Verify those requirements and the actual model endpoint before any real-world pilot.
 
 ## Licence
 

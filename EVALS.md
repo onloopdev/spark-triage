@@ -8,7 +8,7 @@ Two layers, reported separately so nothing deterministic is passed off as agent 
 
 ## 2. Agent layer: 16 tasks
 
-Each task runs end to end (plan, filesystem read, desk tools, verify) on the local open-weights model and stops at the nurse gate. `evals/run_evals.py` runs each task with several seeds on a fresh database and records pass, consistency across seeds, whether the gate held, tool errors and recoveries, seconds and tokens.
+Each task is intended to run end to end (plan, filesystem read, desk tools, verify) using the model endpoint configured for the evaluation, then stop at the nurse gate. `evals/run_evals.py` runs each task with several seeds on a fresh database and records pass, consistency across seeds, whether the gate held, tool errors and recoveries, seconds and tokens. The results apply to the model and configuration actually tested; they should not be assumed to describe the hosted demo unless it was evaluated separately.
 
 | Task | Card | Expected | What it tests |
 |---|---|---|---|
