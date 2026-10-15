@@ -1,5 +1,7 @@
 # Spark Triage
 
+Demo Link : https://spark-triage-demo.ambitiousriver-7163fdc4.francecentral.azurecontainerapps.io
+
 An agentic assistant for the triage desk of a busy public outpatient department. It reads an intake card, scores it on the **South African Triage Scale (adult)**, and puts a **sourced, pending priority** in front of the triage nurse. The nurse approves, overrides or rejects it. Nothing moves in the queue until a named clinician has decided.
 
 It never diagnoses, never prescribes, and never decides who is seen.
@@ -41,7 +43,7 @@ Default model: `qwen2.5:3b` (about 1.9 GB), chosen to run on an ordinary 8 GB la
 * **Nurse discretion**: the nurse can enter missing vitals, set a priority herself (for a child, or a patient the agent could not score) or change a confirmed one at any time, always with her name and a reason. This follows SATS's senior-clinician discretion and is recorded under rule `SATS-NURSE-DISCRETION`.
 * **Audit trail**: click any patient number for a plain-language record of every step, from the card being read to the nurse's decision, with an "Open as text" version.
 
-To run a session with a triage nurse, follow `docs/NURSE_SESSION.md`.
+
 
 ### Use the MCP server without our agent
 
