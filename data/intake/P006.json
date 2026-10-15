@@ -1,0 +1,17 @@
+{
+  "patient_id": "P006",
+  "age_years": 19,
+  "sex": "M",
+  "complaint": "Known sickle cell. Severe pain in both knees and lower back since night.",
+  "nurse_notes": "Crying. Pain score 9/10, says it is the worst crisis he has had.",
+  "vitals": {
+    "rr": 20,
+    "hr": 108,
+    "sbp": 122,
+    "temp": 38.0,
+    "avpu": "A",
+    "mobility": "with_help",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:46:06+00:00"
+}

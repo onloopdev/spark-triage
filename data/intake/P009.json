@@ -1,0 +1,17 @@
+{
+  "patient_id": "P009",
+  "age_years": 23,
+  "sex": "M",
+  "complaint": "Mild cough for 2 weeks. Wants drugs.",
+  "nurse_notes": "",
+  "vitals": {
+    "rr": 18,
+    "hr": 88,
+    "sbp": 120,
+    "temp": 37.8,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T11:41:06+00:00"
+}

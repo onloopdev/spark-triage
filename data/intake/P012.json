@@ -1,0 +1,17 @@
+{
+  "patient_id": "P012",
+  "age_years": 37,
+  "sex": "F",
+  "complaint": "Headache, says it is the worst of her life. Weakness of left arm since this morning.",
+  "nurse_notes": "",
+  "vitals": {
+    "rr": 18,
+    "hr": 84,
+    "sbp": 182,
+    "temp": 36.8,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:41:06+00:00"
+}

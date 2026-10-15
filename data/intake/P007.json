@@ -1,0 +1,18 @@
+{
+  "patient_id": "P007",
+  "age_years": 31,
+  "sex": "M",
+  "complaint": "Diabetic. Sweating and shaking, wife says he is not talking well.",
+  "nurse_notes": "Finger-prick glucose 2.4 mmol/L.",
+  "vitals": {
+    "rr": 18,
+    "hr": 102,
+    "sbp": 126,
+    "temp": 36.6,
+    "avpu": "V",
+    "mobility": "with_help",
+    "trauma": false,
+    "glucose_mmol": 2.4
+  },
+  "arrived_at": "2026-10-15T13:03:06+00:00"
+}

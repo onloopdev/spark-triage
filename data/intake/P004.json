@@ -1,0 +1,17 @@
+{
+  "patient_id": "P004",
+  "age_years": 45,
+  "sex": "M",
+  "complaint": "Okada accident. Open wound on right leg with bone showing.",
+  "nurse_notes": "Bleeding controlled with bandage. Brought in on stretcher.",
+  "vitals": {
+    "rr": 20,
+    "hr": 112,
+    "sbp": 104,
+    "temp": 36.5,
+    "avpu": "A",
+    "mobility": "immobile",
+    "trauma": true
+  },
+  "arrived_at": "2026-10-15T12:59:06+00:00"
+}

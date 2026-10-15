@@ -1,0 +1,17 @@
+{
+  "patient_id": "P010",
+  "age_years": 52,
+  "sex": "M",
+  "complaint": "Dizzy and weak since morning.",
+  "nurse_notes": "BP machine not available at the desk right now.",
+  "vitals": {
+    "rr": 18,
+    "hr": 98,
+    "sbp": null,
+    "temp": 36.8,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:56:06+00:00"
+}

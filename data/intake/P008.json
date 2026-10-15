@@ -1,0 +1,17 @@
+{
+  "patient_id": "P008",
+  "age_years": 40,
+  "sex": "F",
+  "complaint": "Belle dey pain me since two days. I don vomit three times this morning.",
+  "nurse_notes": "Pidgin. Points to upper abdomen.",
+  "vitals": {
+    "rr": 16,
+    "hr": 92,
+    "sbp": 118,
+    "temp": 37.4,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:01:06+00:00"
+}

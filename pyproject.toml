@@ -1,0 +1,34 @@
+[project]
+name = "spark-triage"
+version = "0.1.0"
+description = "Agentic triage-desk assistant on the South African Triage Scale: sourced priorities, nurse confirms every one."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "Cyprian Obiakor (SparkBlood Nigeria)" }]
+dependencies = [
+  "mcp>=1.9",
+  "langgraph>=0.4",
+  "langchain-core>=0.3",
+  "langchain-mcp-adapters>=0.1",
+  "langchain-ollama>=0.3",
+  "starlette>=0.27",
+  "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+spark-triage = "agent.cli:main"
+triage-desk-mcp = "triage_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["triage_mcp", "agent"]
+
+[tool.setuptools.package-data]
+agent = ["static/*.html"]

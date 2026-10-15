@@ -1,0 +1,17 @@
+{
+  "patient_id": "P011",
+  "age_years": 9,
+  "sex": "F",
+  "complaint": "Fever for three days, mother worried.",
+  "nurse_notes": "",
+  "vitals": {
+    "rr": 28,
+    "hr": 120,
+    "sbp": 100,
+    "temp": 38.9,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:53:06+00:00"
+}

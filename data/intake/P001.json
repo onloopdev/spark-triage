@@ -1,0 +1,17 @@
+{
+  "patient_id": "P001",
+  "age_years": 34,
+  "sex": "F",
+  "complaint": "Came for routine blood pressure follow-up. No complaints today.",
+  "nurse_notes": "Looks well.",
+  "vitals": {
+    "rr": 16,
+    "hr": 78,
+    "sbp": 132,
+    "temp": 36.7,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:16:06+00:00"
+}

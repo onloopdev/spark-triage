@@ -1,0 +1,17 @@
+{
+  "patient_id": "P002",
+  "age_years": 58,
+  "sex": "M",
+  "complaint": "Central chest pain for 1 hour, sweating.",
+  "nurse_notes": "Holding chest, walked in with son supporting him.",
+  "vitals": {
+    "rr": 22,
+    "hr": 104,
+    "sbp": 150,
+    "temp": 36.9,
+    "avpu": "A",
+    "mobility": "with_help",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:51:06+00:00"
+}

@@ -1,0 +1,17 @@
+{
+  "patient_id": "P014",
+  "age_years": 70,
+  "sex": "M",
+  "complaint": "Fell at home this morning, cannot stand, pain in right hip.",
+  "nurse_notes": "Carried in. Leg looks shortened.",
+  "vitals": {
+    "rr": 20,
+    "hr": 98,
+    "sbp": 146,
+    "temp": 36.4,
+    "avpu": "A",
+    "mobility": "immobile",
+    "trauma": true
+  },
+  "arrived_at": "2026-10-15T12:26:06+00:00"
+}

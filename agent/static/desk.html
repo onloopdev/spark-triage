@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spark Triage desk</title>
+<style>
+:root {
+  --wall: #e3eae7;
+  --paper: #fbfcfb;
+  --ink: #15252a;
+  --muted: #55676c;
+  --line: #c7d2ce;
+  --focus: #1d5d8a;
+  --danger: #a3131f;
+  --red: #c8102e;
+  --orange: #e2650c;
+  --yellow: #f2c12e;
+  --green: #2e8b55;
+  --sign: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --text: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --code: Consolas, "Cascadia Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--wall); color: var(--ink); font: 15px/1.45 var(--text); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--sign); font-weight: 600; margin: 0; letter-spacing: .01em; }
+
+/* Header */
+.top { display: flex; align-items: center; gap: 24px; padding: 12px 20px; background: var(--ink); color: #f2f5f4; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 12px; }
+.brand h1 { font-size: 26px; font-weight: 700; }
+.brand span { color: #b8c6c2; font-size: 14px; }
+.tally { display: flex; gap: 4px; align-items: stretch; }
+.tally div { min-width: 46px; padding: 2px 8px 3px; font-family: var(--sign); font-size: 22px; line-height: 1.1; color: #fff; border-radius: 3px; }
+.tally small { display: block; font-size: 11px; font-family: var(--text); opacity: .9; }
+.tally .y { color: var(--ink); }
+.nurse { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #c9d5d2; }
+.nurse input { width: 190px; padding: 6px 9px; border-radius: 4px; border: 2px solid #4b6066; background: #22363c; color: #fff; }
+.nurse input.missing { border-color: var(--yellow); }
+.clock { font-family: var(--sign); font-size: 22px; min-width: 64px; text-align: right; }
+
+/* Layout */
+.desk { display: grid; grid-template-columns: minmax(250px, 300px) minmax(380px, 1fr) minmax(360px, 460px); gap: 16px; padding: 16px 20px 0; align-items: start; }
+.col { min-width: 0; }
+.col > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.col > header h2 { font-size: 20px; }
+.col > header p { margin: 0; color: var(--muted); font-size: 13px; }
+.empty { padding: 18px 14px; color: var(--muted); border: 2px dashed var(--line); border-radius: 6px; font-size: 14px; }
+
+/* Buttons */
+.btn { border: 2px solid var(--ink); background: var(--paper); padding: 8px 14px; min-height: 42px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn:hover { background: #eef2f1; }
+.btn.solid { background: var(--ink); color: #fff; }
+.btn.solid:hover { background: #2a3e44; }
+.btn.quiet { border-color: var(--line); font-weight: 500; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.c-red { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.c-orange { background: var(--orange); border-color: var(--orange); color: #fff; }
+.btn.c-yellow { background: var(--yellow); border-color: #c99a10; color: var(--ink); }
+.btn.c-green { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* Case cards: the colour bar is the patient's triage tag */
+.case { position: relative; background: var(--paper); border: 1px solid var(--line); border-left: 10px solid #9fb0ab; border-radius: 4px; padding: 10px 12px; margin-bottom: 8px; }
+.case.red { border-left-color: var(--red); }
+.case.orange { border-left-color: var(--orange); }
+.case.yellow { border-left-color: var(--yellow); }
+.case.green { border-left-color: var(--green); }
+.case .who { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.case .pid { font-family: var(--sign); font-size: 19px; font-weight: 700; }
+.case .demo { color: var(--muted); font-size: 13px; }
+.case .complaint { margin: 4px 0 0; }
+.case .notes { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.case .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.status { font-size: 13px; color: var(--focus); font-weight: 600; }
+.signed-line b { color: var(--ink); }
+.status.err { color: var(--danger); }
+
+/* Queue */
+.qrow { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: start; }
+.pos { font-family: var(--sign); font-size: 34px; line-height: 1; font-weight: 700; color: var(--ink); text-align: center; padding-top: 2px; }
+.wait { text-align: right; font-family: var(--sign); }
+.wait b { font-size: 26px; line-height: 1; display: block; }
+.wait span { font-size: 12px; color: var(--muted); font-family: var(--text); }
+.late { display: inline-block; margin-top: 4px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 3px; font-family: var(--text); }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 13px; font-weight: 700; color: #fff; }
+.tag.red { background: var(--red); } .tag.orange { background: var(--orange); }
+.tag.yellow { background: var(--yellow); color: var(--ink); } .tag.green { background: var(--green); }
+.by { color: var(--muted); font-size: 12px; }
+.flagline { margin-top: 6px; font-size: 13px; color: var(--danger); font-weight: 600; }
+
+/* Inline forms */
+form.inline { margin-top: 10px; padding: 10px; background: #eef3f1; border-radius: 4px; display: grid; gap: 8px; }
+.vit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+label.f { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+label.f input, label.f select, label.f textarea { padding: 5px 7px; border: 1px solid #9fb0ab; border-radius: 3px; background: #fff; font-size: 14px; }
+.err-msg { color: var(--danger); font-size: 13px; font-weight: 600; }
+
+/* Decision panel */
+.decide { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; margin-bottom: 12px; overflow: hidden; }
+.decide .bar { padding: 10px 14px; color: #fff; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.decide .bar.red { background: var(--red); } .decide .bar.orange { background: var(--orange); }
+.decide .bar.yellow { background: var(--yellow); color: var(--ink); } .decide .bar.green { background: var(--green); }
+.decide .bar.flag { background: #5a3d0c; }
+.decide .bar h3 { font-size: 22px; }
+.decide .bar p { margin: 0; font-size: 14px; font-weight: 600; }
+.decide .body { padding: 12px 14px; }
+.decide .quote { background: #f1f4f3; border-radius: 4px; padding: 8px 10px; margin: 0 0 10px; }
+.decide .quote p { margin: 0; }
+.decide .quote p + p { margin-top: 4px; color: var(--muted); font-size: 14px; }
+mark { padding: 0 2px; border-radius: 2px; background: #fbe3a1; color: inherit; box-shadow: inset 0 -2px 0 var(--orange); }
+mark.red { box-shadow: inset 0 -2px 0 var(--red); background: #f8d3d9; }
+mark.yellow { box-shadow: inset 0 -2px 0 #c99a10; }
+.why { list-style: none; margin: 0 0 12px; padding: 0; border-top: 1px solid var(--line); }
+.why li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.why .rule { font-family: var(--code); font-size: 11px; color: var(--muted); align-self: center; }
+.why .pts { font-family: var(--sign); font-weight: 700; }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatches { display: flex; gap: 6px; }
+.swatches button { flex: 1; }
+.swatches button[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+.retri { font-size: 13px; margin: 0 0 8px; color: var(--muted); }
+
+/* Activity strip */
+.activity { margin: 16px 20px 20px; background: var(--ink); color: #dbe5e2; border-radius: 4px; }
+.activity header { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px 6px; gap: 12px; flex-wrap: wrap; }
+.activity h2 { font-size: 18px; color: #fff; }
+.activity header p { margin: 0; font-size: 13px; color: #9fb3ae; }
+.log { max-height: 240px; overflow-y: auto; padding: 0 14px 12px; font-family: var(--code); font-size: 12.5px; }
+.log div { display: grid; grid-template-columns: 64px 46px 1fr; gap: 10px; padding: 2px 0; border-top: 1px solid #24383e; }
+.log .t { color: #7f9690; }
+.log .p { color: #fff; }
+.log .ok { color: #b9f0cf; }
+.log .bad { color: #ffb4b4; }
+.log .plan { color: #ffe39a; white-space: pre-wrap; }
+.log .gate { color: #fff; font-weight: 700; }
+.running { color: #ffe39a; font-weight: 600; }
+
+/* Blind mode */
+.blindsw { display: flex; align-items: center; gap: 8px; border: 2px solid #4b6066; background: transparent; color: #dfe7e5; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.blindsw b { font-family: var(--sign); font-size: 15px; padding: 0 6px; border-radius: 3px; background: #33494f; color: #fff; }
+.blindsw[aria-pressed="true"] { border-color: var(--yellow); }
+.blindsw[aria-pressed="true"] b { background: var(--yellow); color: var(--ink); }
+.decide .bar.blindbar { background: repeating-linear-gradient(135deg, #4a5b60 0 12px, #53656a 12px 24px); }
+.vitals { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 0 10px; padding: 0; list-style: none; }
+.vitals li { background: #e9eeec; border-radius: 3px; padding: 1px 7px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.vitals li.miss { background: #f8d3d9; color: var(--danger); font-weight: 600; }
+.ask { margin: 0 0 6px; font-family: var(--sign); font-size: 17px; font-weight: 600; }
+.verdict { margin: 0 0 10px; padding: 8px 10px; border-radius: 4px; font-weight: 600; border-left: 6px solid var(--green); background: #e5f2ea; }
+.verdict.differ { border-left-color: var(--danger); background: #fbe5e7; }
+
+/* Agreement panel */
+.agree { margin-top: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; }
+.agree h3 { font-size: 17px; }
+.agree .big { margin: 6px 0 8px; font-family: var(--sign); font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.agree .big span { font-size: 15px; color: var(--muted); font-family: var(--text); }
+.agree .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
+.agree .split div { border-top: 3px solid var(--line); padding-top: 4px; font-size: 13px; color: var(--muted); }
+.agree .split div.warn { border-top-color: var(--danger); }
+.agree .split b { display: block; font-family: var(--sign); font-size: 22px; color: var(--ink); }
+.agree ul { margin: 0; padding-left: 18px; font-size: 13px; }
+
+/* Queue header actions and audit */
+.metrics { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 12px; padding: 8px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; }
+.metrics div { font-size: 12px; color: var(--muted); }
+.metrics b { display: block; font-family: var(--sign); font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.qtools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -2px 0 10px; font-size: 13px; color: var(--muted); }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+button.pid.linkish { text-decoration-color: #9fb0ab; }
+dialog { width: min(680px, calc(100vw - 32px)); border: 0; border-radius: 6px; padding: 0; background: var(--paper); color: var(--ink); }
+dialog::backdrop { background: rgba(21, 37, 42, .55); }
+dialog header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 18px 8px; border-bottom: 1px solid var(--line); }
+dialog h2 { font-size: 21px; }
+.trail { list-style: none; margin: 0; padding: 6px 18px 16px; max-height: 65vh; overflow-y: auto; }
+.trail li { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.trail time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.trail li.human span { font-weight: 600; }
+.trail li.fail span { color: var(--danger); }
+
+@media (max-width: 1100px) {
+  .desk { grid-template-columns: 1fr 1fr; }
+  .col.decisions { grid-column: 1 / -1; order: -1; }
+}
+@media (max-width: 720px) {
+  .desk { grid-template-columns: 1fr; padding: 12px 16px 0; }
+  .top { padding: 12px 16px; }
+  .nurse { margin-left: 0; width: 100%; }
+  .nurse input { flex: 1; }
+  .activity { margin: 12px 16px 16px; }
+  .vit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .decide.new { animation: arrive .45s ease-out; }
+  @keyframes arrive { from { box-shadow: 0 0 0 4px var(--focus); } to { box-shadow: 0 0 0 0 transparent; } }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><h1>Spark Triage</h1><span>Outpatient triage desk, South African Triage Scale (adult)</span></div>
+  <div class="tally" id="tally" aria-label="Patients in the queue by priority"></div>
+  <button class="blindsw" id="blind" aria-pressed="false" title="Make your own call before the agent's proposal is shown">Blind mode <b>off</b></button>
+  <label class="nurse">Nurse on desk <input id="nurse" autocomplete="name" placeholder="Your full name"></label>
+  <div class="clock" id="clock" aria-label="Time"></div>
+</header>
+
+<main class="desk">
+  <section class="col" aria-labelledby="h-arr">
+    <header><h2 id="h-arr">New arrivals</h2><button class="btn quiet" id="all">Triage all</button></header>
+    <div id="arrivals"></div>
+  </section>
+
+  <section class="col" aria-labelledby="h-q">
+    <header><h2 id="h-q">Queue</h2><p>Confirmed by a nurse. Most urgent first, then longest wait.</p></header>
+    <div class="metrics" id="metrics" aria-label="Today at this desk"></div>
+    <div class="qtools"><button class="btn quiet" id="sweep">Check for overdue patients</button><span id="sweepinfo"></span></div>
+    <div id="queue"></div>
+    <div id="untriaged"></div>
+    <div id="agree"></div>
+  </section>
+
+  <section class="col decisions" aria-labelledby="h-d">
+    <header><h2 id="h-d">Needs your decision</h2><p id="dcount"></p></header>
+    <div id="decisions"></div>
+  </section>
+</main>
+
+<dialog id="audit" aria-labelledby="h-audit">
+  <header><h2 id="h-audit">Audit trail</h2><div class="row"><a id="audit-txt" class="btn quiet" target="_blank" rel="noopener">Open as text</a><button class="btn" id="audit-close">Close</button></div></header>
+  <ol class="trail" id="trail"></ol>
+</dialog>
+
+<section class="activity" aria-labelledby="h-a">
+  <header><h2 id="h-a">What the agent is doing</h2><p id="running">Idle</p></header>
+  <div class="log" id="log" aria-live="polite"></div>
+</section>
+
+<script>
+"use strict";
+const COLOURS = ["red", "orange", "yellow", "green"];
+const RANK = { green: 0, yellow: 1, orange: 2, red: 3 };
+const KIND = { missing_vitals: "Vitals missing", nurse_review: "Needs nurse review", deterioration: "Possible deterioration" };
+const ui = { open: {}, drafts: {}, errors: {}, sent: new Set(), seenDecisions: new Set(), lastEvent: 0, sigs: {} };
+
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+const nurseEl = document.getElementById("nurse");
+nurseEl.value = store("spark-nurse") || "";
+nurseEl.addEventListener("input", () => { store("spark-nurse", nurseEl.value.trim()); nurseEl.classList.remove("missing"); fillSigned(); });
+
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function sexWord(s) { return s === "F" ? "female" : s === "M" ? "male" : (s || ""); }
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
+function mins(m) { m = Math.max(0, Math.round(m || 0)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; }
+function target(t) { return t === 0 ? "immediately" : `${t} min`; }
+function clock(ts) { const d = new Date(ts); return isNaN(d) ? "" : d.toTimeString().slice(0, 8); }
+function vitalsList(v) {
+  if (!v) return "";
+  const avpu = { A: "alert", V: "reacts to voice", C: "confused", P: "reacts to pain", U: "unresponsive" };
+  const mob = { walking: "walking", with_help: "walks with help", immobile: "on a stretcher" };
+  const item = (val, text) => val === null || val === undefined || val === "" ? "" : `<li>${text}</li>`;
+  const missing = ["rr", "hr", "sbp", "temp", "avpu", "mobility"].filter(k => v[k] === null || v[k] === undefined);
+  return `<ul class="vitals" aria-label="Vitals">
+    ${item(v.rr, `Breathing ${esc(v.rr)}/min`)}${item(v.hr, `Pulse ${esc(v.hr)}`)}${item(v.sbp, `BP ${esc(v.sbp)} systolic`)}
+    ${item(v.temp, `${esc(v.temp)} °C`)}${item(v.avpu, esc(avpu[v.avpu] || v.avpu))}${item(v.mobility, esc(mob[v.mobility] || v.mobility))}
+    ${v.trauma ? "<li>trauma</li>" : ""}${item(v.glucose_mmol, `glucose ${esc(v.glucose_mmol)} mmol/L`)}${item(v.spo2, `SpO2 ${esc(v.spo2)}%`)}
+    ${missing.map(k => `<li class="miss">${{ rr: "breathing rate", hr: "pulse", sbp: "BP", temp: "temperature", avpu: "responsiveness", mobility: "mobility" }[k]} not taken</li>`).join("")}
+  </ul>`;
+}
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const data = await r.json().catch(() => ({ error: "The desk server did not answer." }));
+  if (!r.ok) throw new Error(data.error || "Request failed.");
+  return data;
+}
+
+function nurseName() {
+  const n = nurseEl.value.trim();
+  if (n.length < 2) { nurseEl.classList.add("missing"); nurseEl.focus(); throw new Error("Enter your name in the top bar first."); }
+  return n;
+}
+
+/* Highlight every quote the agent cited, in the colour of its discriminator. */
+function highlight(text, sources) {
+  let out = esc(text);
+  for (const s of sources || []) {
+    if (s.type !== "symptom_discriminator" || !s.evidence) continue;
+    const q = esc(s.evidence).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+    out = out.replace(new RegExp(q, "i"), m => `<mark class="${s.colour}">${m}</mark>`);
+  }
+  return out;
+}
+
+function why(s) {
+  if (s.type === "tews_total") return `<li><span>Early warning score <span class="pts">${s.tews}</span>, on its own ${s.colour}</span><span class="rule">${esc(s.rule_id)}</span></li>`;
+  if (s.type === "vital") {
+    const names = { rr: "Breathing rate", hr: "Pulse", sbp: "Systolic BP", temp: "Temperature", avpu: "Responsiveness", mobility: "Mobility", trauma: "Trauma" };
+    return `<li><span>${names[s.param] || s.param} ${esc(s.value)} <span class="pts">+${s.points}</span></span><span class="rule">${esc(s.rule_id)}</span></li>`;
+  }
+  if (s.type === "measured_discriminator") return `<li><span><span class="tag ${s.colour}">${cap(s.colour)}</span> measured: ${esc(s.evidence)}</span><span class="rule">${esc(s.rule_id)}</span></li>`;
+  return `<li><span><span class="tag ${s.colour}">${cap(s.colour)}</span> ${esc(s.code.replace(/_/g, " ").toLowerCase())}: “${esc(s.evidence)}”</span><span class="rule">${esc(s.rule_id)}</span></li>`;
+}
+
+function errLine(key) { return ui.errors[key] ? `<p class="err-msg" role="alert">${esc(ui.errors[key])}</p>` : ""; }
+function draft(key, field, fallback = "") { return esc((ui.drafts[key] || {})[field] ?? fallback); }
+
+function setPriorityForm(pid) {
+  const k = "sp-" + pid, pick = (ui.drafts[k] || {}).colour;
+  return `<form class="inline" data-form="setpri" data-pid="${esc(pid)}" data-key="${k}">
+    <div class="swatches">${COLOURS.map(x => `<button type="button" class="btn c-${x}" data-pick="${x}" data-key="${k}" aria-pressed="${pick === x}">${cap(x)}</button>`).join("")}</div>
+    <label class="f">Why<input name="note" value="${draft(k, "note")}" placeholder="Required, e.g. looks more unwell than the vitals show"></label>
+    ${errLine(k)}
+    <div class="row"><button class="btn solid" type="submit">Save priority</button><button class="btn quiet" type="button" data-close="${k}">Cancel</button></div>
+    ${signedLine()}
+  </form>`;
+}
+
+function signedLine() { return `<p class="by signed-line">Signing as <b class="signed"></b>. Not you? Change the name at the top.</p>`; }
+function fillSigned() { const n = nurseEl.value.trim() || "nobody yet"; document.querySelectorAll(".signed").forEach(el => { el.textContent = n; }); }
+
+function recheckForm(pid) {
+  const k = "rc-" + pid;
+  return `<form class="inline" data-form="recheck" data-pid="${pid}" data-key="${k}">
+    <div class="vit">
+      <label class="f">Breathing /min<input name="rr" inputmode="numeric" value="${draft(k, "rr")}"></label>
+      <label class="f">Pulse /min<input name="hr" inputmode="numeric" value="${draft(k, "hr")}"></label>
+      <label class="f">Systolic BP<input name="sbp" inputmode="numeric" value="${draft(k, "sbp")}"></label>
+      <label class="f">Temperature °C<input name="temp" inputmode="decimal" value="${draft(k, "temp")}"></label>
+      <label class="f">Responsiveness<select name="avpu">${["", "A", "C", "V", "P", "U"].map(v => `<option value="${v}" ${draft(k, "avpu") === v ? "selected" : ""}>${{ "": "unchanged", A: "Alert", C: "Confused", V: "Reacts to voice", P: "Reacts to pain", U: "Unresponsive" }[v]}</option>`).join("")}</select></label>
+      <label class="f">Mobility<select name="mobility">${["", "walking", "with_help", "immobile"].map(v => `<option value="${v}" ${draft(k, "mobility") === v ? "selected" : ""}>${{ "": "unchanged", walking: "Walking", with_help: "With help", immobile: "Stretcher" }[v]}</option>`).join("")}</select></label>
+    </div>
+    <label class="f">What changed<input name="reason" placeholder="e.g. more breathless, now confused" value="${draft(k, "reason")}"></label>
+    ${errLine(k)}
+    <div class="row"><button class="btn solid" type="submit">Send re-check</button><button class="btn quiet" type="button" data-close="${k}">Cancel</button></div>
+    <p class="by">Leave a vital empty if you did not re-measure it. With no new vitals, the agent asks you for a second look instead.</p>
+  </form>`;
+}
+
+function renderTally(counts) {
+  document.getElementById("tally").innerHTML = COLOURS.map(c =>
+    `<div style="background:var(--${c})" class="${c === "yellow" ? "y" : ""}">${counts[c] || 0}<small>${cap(c)}</small></div>`).join("");
+}
+
+function renderArrivals(list, busyIds) {
+  const el = document.getElementById("arrivals");
+  if (!list.length) { el.innerHTML = `<p class="empty">No new cards. New intake cards appear here as they are saved to the intake folder.</p>`; return; }
+  el.innerHTML = list.map(c => {
+    const busy = c.busy || ui.sent.has(c.patient_id);
+    const status = busyIds.running === c.patient_id ? "Agent is scoring this card" : busy ? "Waiting for the agent" : "";
+    return `<article class="case">
+      <div class="who"><span class="pid">${esc(c.patient_id)}</span><span class="demo">${esc(c.age_years)}, ${sexWord(c.sex)}, waiting ${mins(c.waited_min)}</span></div>
+      <p class="complaint">${esc(c.complaint)}</p>
+      ${c.nurse_notes ? `<p class="notes">${esc(c.nurse_notes)}</p>` : ""}
+      <div class="row">${status ? `<span class="status">${status}</span>` : `<button class="btn" data-triage="${esc(c.patient_id)}">Triage</button>`}</div>
+    </article>`;
+  }).join("");
+}
+
+function renderQueue(queue, untriaged) {
+  const el = document.getElementById("queue");
+  el.innerHTML = queue.length ? queue.map(r => {
+    const k = "rc-" + r.patient_id;
+    const c = r.card || {};
+    return `<article class="case ${r.colour}">
+      <div class="qrow">
+        <div class="pos" aria-label="Position ${r.position}">${r.position}</div>
+        <div>
+          <div class="who"><button class="pid linkish" data-audit="${esc(r.patient_id)}" title="Audit trail">${esc(r.patient_id)}</button><span class="tag ${r.colour}">${cap(r.colour)}</span><span class="demo">${esc(c.age_years)}, ${sexWord(c.sex)}</span></div>
+          <p class="complaint">${esc(c.complaint)}</p>
+          <p class="by">Confirmed by ${esc(r.confirmed_by)}</p>
+          ${r.open_flags.map(f => `<p class="flagline">${KIND[f.kind] || f.kind}: ${esc(f.reason)}</p>`).join("")}
+          ${r.busy || ui.sent.has(k) ? `<p class="status">Agent is looking at the re-check</p>` :
+            ui.open[k] ? recheckForm(r.patient_id) : ui.open["sp-" + r.patient_id] ? setPriorityForm(r.patient_id) :
+            `<div class="row"><button class="btn solid" data-seen="${esc(r.patient_id)}" data-key="${k}">Send to bay</button><button class="btn quiet" data-open="${k}">Re-check vitals</button><button class="btn quiet" data-open="sp-${esc(r.patient_id)}">Change priority</button></div>${errLine(k)}`}
+        </div>
+        <div class="wait"><b>${mins(r.waited_min)}</b><span>target ${target(r.target_min)}</span>${r.overdue ? `<br><span class="late">${r.target_min === 0 ? "Needs a doctor now" : "Overdue"}</span>` : ""}</div>
+      </div>
+    </article>`;
+  }).join("") : `<p class="empty">Nobody is in the queue yet. A patient joins it when you approve or override the agent's proposal.</p>`;
+  document.getElementById("untriaged").innerHTML = untriaged.length ? `<h3 style="font-size:16px;margin:14px 0 6px">Registered, no priority yet</h3>` +
+    untriaged.map(r => `<article class="case"><div class="who"><button class="pid linkish" data-audit="${esc(r.patient_id)}" title="Audit trail">${esc(r.patient_id)}</button><span class="demo">waiting ${mins(r.waited_min)}</span></div>
+      <p class="notes">The agent could not finish. Enter the missing vitals or set the priority yourself.</p>
+      ${ui.sent.has("rc-" + r.patient_id) ? `<p class="status">Agent is looking at the new vitals</p>` :
+        ui.open["rc-" + r.patient_id] ? recheckForm(r.patient_id) : ui.open["sp-" + r.patient_id] ? setPriorityForm(r.patient_id) :
+        `<div class="row"><button class="btn quiet" data-open="rc-${esc(r.patient_id)}" data-reason="Vitals measured at desk">Enter vitals</button><button class="btn quiet" data-open="sp-${esc(r.patient_id)}">Set priority</button></div>`}
+      </article>`).join("") : "";
+}
+
+function renderDecisions(list) {
+  const el = document.getElementById("decisions");
+  document.getElementById("dcount").textContent = list.length ? `${list.length} waiting` : "";
+  if (!list.length) { el.innerHTML = `<p class="empty">Nothing to confirm. The agent's proposals appear here with every reason it used. Nobody joins the queue until you decide.</p>`; return; }
+  el.innerHTML = list.map(d => {
+    const key = d.type === "proposal" ? "p-" + d.proposal_id : "f-" + d.flag_id;
+    const isNew = !ui.seenDecisions.has(key); ui.seenDecisions.add(key);
+    const c = d.card || {};
+    const card = `<div class="quote"><p>${highlight(c.complaint, d.sources)}</p>${c.nurse_notes ? `<p>${highlight(c.nurse_notes, d.sources)}</p>` : ""}</div>`;
+    if (d.type === "flag") {
+      return `<article class="decide ${isNew ? "new" : ""}">
+        <div class="bar flag"><h3>${esc(d.patient_id)}</h3><p>${KIND[d.flag_kind] || d.flag_kind}</p></div>
+        <div class="body">${card}${vitalsList(c.vitals)}<p>${esc(d.reason)}</p>${errLine(key)}
+          ${ui.sent.has("rc-" + d.patient_id) ? `<p class="status">Agent is looking at the new vitals</p>` :
+            ui.open["rc-" + d.patient_id] ? recheckForm(d.patient_id) : ui.open["sp-" + d.patient_id] ? setPriorityForm(d.patient_id) :
+            ui.open["n-" + key] ? `<form class="inline" data-form="note" data-key="${key}" data-action="acknowledge" data-flag="${d.flag_id}">
+            <label class="f">What you did<input name="note" value="${draft(key, "note")}" placeholder="e.g. told the doctor, re-checked at the desk"></label>
+            <div class="row"><button class="btn solid" type="submit">Mark as handled</button><button class="btn quiet" type="button" data-close="n-${key}">Cancel</button></div>${signedLine()}</form>`
+          : `<div class="choices">
+              ${d.flag_kind === "missing_vitals" ? `<button class="btn solid" data-open="rc-${esc(d.patient_id)}" data-reason="Vitals measured at desk">Enter vitals</button>` : ""}
+              ${d.flag_kind === "nurse_review" ? `<button class="btn" data-open="sp-${esc(d.patient_id)}">Set priority yourself</button>` : ""}
+              <button class="btn ${d.flag_kind === "missing_vitals" ? "quiet" : "solid"}" data-open="n-${key}">Mark as handled</button></div>`}
+        </div></article>`;
+    }
+    const vit = vitalsList(c.vitals);
+    if (d.hidden) {
+      const retriH = d.kind === "retriage" ? `<p class="retri">Re-check after new vitals. Currently confirmed as ${cap(d.confirmed || "none")}.</p>` : "";
+      return `<article class="decide ${isNew ? "new" : ""}">
+        <div class="bar blindbar"><h3>${esc(d.patient_id)}, ${esc(c.age_years)}, ${sexWord(c.sex)}</h3><p>Your call first</p></div>
+        <div class="body">${retriH}<div class="quote"><p>${esc(c.complaint)}</p>${c.nurse_notes ? `<p>${esc(c.nurse_notes)}</p>` : ""}</div>${vit}
+          <p class="ask">What priority would you give?</p>
+          <div class="swatches">${COLOURS.map(x => `<button type="button" class="btn c-${x}" data-blind="${d.proposal_id}" data-colour="${x}" data-key="${key}">${cap(x)}</button>`).join("")}</div>
+          ${errLine(key)}
+          <p class="by">The agent's proposal stays hidden until you choose. Your choice is saved and cannot be changed.</p>
+        </div></article>`;
+    }
+    const retri = d.kind === "retriage" ? `<p class="retri">Re-triage. Currently confirmed as ${cap(d.confirmed || "none")}; the queue keeps that until you decide.</p>` : "";
+    const bc = d.blind_call;
+    const differ = bc && bc.colour !== d.colour;
+    let verdict = "";
+    if (bc) {
+      const gap = RANK[d.colour] - RANK[bc.colour];
+      verdict = gap === 0 ? `<p class="verdict">You said ${cap(bc.colour)}. The agent agrees.</p>`
+        : `<p class="verdict differ">You said ${cap(bc.colour)}. The agent proposed ${cap(d.colour)}, ${gap > 0 ? "more" : "less"} urgent than you.</p>`;
+    }
+    const mode = ui.open["m-" + key];
+    let actions = `<div class="choices">
+        <button class="btn c-${d.colour}" data-approve="${d.proposal_id}" data-key="${key}">Approve ${differ ? "agent's " : ""}${cap(d.colour)}</button>
+        ${differ ? `<button class="btn c-${bc.colour}" data-open="m-${key}" data-mode="override" data-preset="${bc.colour}">Use my ${cap(bc.colour)}</button>`
+                 : `<button class="btn" data-open="m-${key}" data-mode="override">Change priority</button>`}
+        <button class="btn quiet" data-open="m-${key}" data-mode="reject">Reject</button></div>`;
+    if (mode === "override") {
+      const pick = (ui.drafts[key] || {}).colour;
+      actions = `<form class="inline" data-form="override" data-key="${key}" data-proposal="${d.proposal_id}">
+        <div class="swatches">${COLOURS.map(x => `<button type="button" class="btn c-${x}" data-pick="${x}" data-key="${key}" aria-pressed="${pick === x}">${cap(x)}</button>`).join("")}</div>
+        <label class="f">Why you are changing it<input name="note" value="${draft(key, "note")}" placeholder="Required"></label>
+        <div class="row"><button class="btn solid" type="submit">Save change</button><button class="btn quiet" type="button" data-close="m-${key}">Cancel</button></div></form>`;
+    } else if (mode === "reject") {
+      actions = `<form class="inline" data-form="reject" data-key="${key}" data-proposal="${d.proposal_id}">
+        <label class="f">Why you are rejecting it<input name="note" value="${draft(key, "note")}" placeholder="Required. The patient stays untriaged."></label>
+        <div class="row"><button class="btn solid" type="submit">Reject proposal</button><button class="btn quiet" type="button" data-close="m-${key}">Cancel</button></div></form>`;
+    }
+    return `<article class="decide ${isNew ? "new" : ""}">
+      <div class="bar ${d.colour}"><h3><button class="linkish" data-audit="${esc(d.patient_id)}" title="Audit trail">${esc(d.patient_id)}</button>, ${esc(c.age_years)}, ${sexWord(c.sex)}</h3><p>${cap(d.colour)}, see ${d.target_min === 0 ? "now" : "within " + d.target_min + " min"}</p></div>
+      <div class="body">${retri}${verdict}${card}${vit}
+        <ul class="why">${(d.sources || []).map(why).join("")}</ul>
+        ${errLine(key)}${actions}${mode ? "" : signedLine()}
+      </div></article>`;
+  }).join("");
+}
+
+function renderMetrics(m) {
+  m = m || {};
+  const med = m.median_min_to_priority === null || m.median_min_to_priority === undefined ? "none yet" : mins(m.median_min_to_priority);
+  document.getElementById("metrics").innerHTML = `
+    <div><b>${m.with_priority || 0} of ${m.registered || 0}</b>given a confirmed priority</div>
+    <div><b>${med}</b>median from arrival to a confirmed priority</div>
+    <div><b>${m.seen ? `${m.seen_within_target} of ${m.seen}` : "none yet"}</b>sent to a bay within the SATS target</div>
+    <div><b>${m.nurse_lowered || 0}</b>times a nurse lowered the agent's priority</div>`;
+}
+
+function renderAgree(s) {
+  const a = s.agreement || {}, el = document.getElementById("agree");
+  if (!s.blind_mode && !a.blind_calls) { el.innerHTML = ""; return; }
+  el.innerHTML = `<section class="agree" aria-labelledby="h-ag"><h3 id="h-ag">Your calls against the agent's</h3>
+    ${a.blind_calls ? `<p class="big">${a.agree} of ${a.blind_calls} <span>agreed</span></p>
+      <div class="split"><div><b>${a.agent_more_urgent}</b>Agent more urgent than the nurse</div>
+      <div class="${a.agent_less_urgent ? "warn" : ""}"><b>${a.agent_less_urgent}</b>Agent less urgent, a possible under-triage</div></div>
+      ${a.disagreements.length ? `<ul>${a.disagreements.map(x => `<li>${esc(x.patient_id)}: nurse ${cap(x.nurse)}, agent ${cap(x.agent)}${x.final ? `, final ${cap(x.final)}` : ""}</li>`).join("")}</ul>` : ""}`
+    : `<p class="by">Blind mode is on. Make your own call on each proposal and the comparison builds up here.</p>`}
+  </section>`;
+}
+
+async function openAudit(pid) {
+  const dlg = document.getElementById("audit"), list = document.getElementById("trail");
+  document.getElementById("h-audit").textContent = `Audit trail for ${pid}`;
+  document.getElementById("audit-txt").href = `/audit/${encodeURIComponent(pid)}.txt`;
+  list.innerHTML = `<li><span>Loading</span></li>`;
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+  try {
+    const rows = await api(`/api/audit/${encodeURIComponent(pid)}`);
+    list.innerHTML = rows.length ? rows.map(r => `<li class="${r.ok ? "" : "fail"} ${r.actor.startsWith("clinician:") ? "human" : ""}"><time datetime="${esc(r.ts)}">${clock(r.ts)}</time><span>${esc(r.summary)}</span></li>`).join("")
+      : `<li><span>Nothing recorded for this patient yet.</span></li>`;
+  } catch (e) { list.innerHTML = `<li class="fail"><span>${esc(e.message)}</span></li>`; }
+}
+
+function renderLog(events) {
+  const log = document.getElementById("log");
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 30;
+  for (const e of events) {
+    if (e.n <= ui.lastEvent) continue;
+    ui.lastEvent = e.n;
+    const div = document.createElement("div");
+    const t = clock(e.ts);
+    let cls = "", text = esc(e.text);
+    if (e.kind === "tool") {
+      cls = e.ok ? "ok" : "bad";
+      const args = Object.entries(e.args || {}).map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`).join(", ");
+      text = `${e.server}.${esc(e.tool)}(${esc(args)}) ${e.ok ? "ok" : "ERROR"}: ${esc(e.text)}`;
+    } else if (e.kind === "plan") { cls = "plan"; text = "plan:\n" + esc(e.text); }
+    else if (e.kind === "gate" || e.kind === "decision") { cls = "gate"; }
+    else if (e.ok === false || e.kind === "error") { cls = "bad"; }
+    div.innerHTML = `<span class="t">${t}</span><span class="p">${esc(e.patient || "")}</span><span class="${cls}">${text}</span>`;
+    log.appendChild(div);
+  }
+  if (atBottom) log.scrollTop = log.scrollHeight;
+}
+
+/* Re-render a column only when its data changed, and never while you are typing in it. */
+function paint(id, data, fn) {
+  const sig = JSON.stringify(data) + JSON.stringify([ui.open, ui.errors, [...ui.sent]]);
+  const el = document.getElementById(id);
+  if (ui.sigs[id] === sig || el.contains(document.activeElement) && document.activeElement.matches("input, select, textarea")) return;
+  ui.sigs[id] = sig; fn();
+}
+
+let last = null;
+async function refresh() {
+  try {
+    const s = await api("/api/state?after=" + ui.lastEvent);
+    last = s;
+    const busy = new Set([...(s.waiting || []).map(w => w.patient_id), s.running && s.running.patient_id]);
+    for (const id of [...ui.sent]) if (!busy.has(id.replace(/^rc-/, ""))) ui.sent.delete(id);
+    paint("tally", s.counts, () => renderTally(s.counts));
+    paint("arrivals", [s.arrivals, s.running], () => renderArrivals(s.arrivals, { running: s.running && s.running.patient_id }));
+    paint("queue", [s.queue, s.untriaged], () => renderQueue(s.queue, s.untriaged));
+    paint("decisions", s.decisions, () => renderDecisions(s.decisions));
+    fillSigned();
+    const nDec = s.decisions.length, nRed = s.decisions.filter(d => !d.hidden && d.colour === "red").length;
+    document.title = (nDec ? `(${nDec}${nRed ? `, ${nRed} red` : ""}) ` : "") + "Spark Triage desk";
+    paint("agree", [s.agreement, s.blind_mode], () => renderAgree(s));
+    paint("metrics", s.metrics, () => renderMetrics(s.metrics));
+    const bs = document.getElementById("blind");
+    bs.setAttribute("aria-pressed", String(!!s.blind_mode));
+    bs.querySelector("b").textContent = s.blind_mode ? "on" : "off";
+    if (!ui.sweepMsg || Date.now() > ui.sweepMsgUntil) {
+      const n = (s.overdue_unflagged || []).length;
+      document.getElementById("sweepinfo").textContent = n ? `${n} waiting past target without a flag` :
+        (s.sweep_every_min > 0 ? `The agent checks every ${s.sweep_every_min} min` : "Automatic check is off") +
+        (s.last_sweep ? `, last at ${clock(s.last_sweep).slice(0, 5)}` : "");
+    }
+    renderLog(s.events);
+    document.getElementById("running").innerHTML = s.running
+      ? `<span class="running">${esc(s.running.label)} on ${esc(s.model)}</span>${s.waiting.length ? `, ${s.waiting.length} more waiting` : ""}`
+      : `Idle. Model: ${esc(s.model)}, running on this computer.`;
+    document.getElementById("all").disabled = !s.arrivals.some(a => !a.busy);
+  } catch (e) {
+    document.getElementById("running").innerHTML = `<span class="status err">Lost contact with the desk server. Check the terminal window.</span>`;
+  }
+}
+
+function rerenderAll() { ui.sigs = {}; if (last) { renderArrivals(last.arrivals, { running: last.running && last.running.patient_id }); renderQueue(last.queue, last.untriaged); renderDecisions(last.decisions); } }
+
+async function decide(key, body) {
+  try {
+    body.clinician = nurseName();
+    await api("/api/decide", body);
+    delete ui.open["m-" + key]; delete ui.open["n-" + key]; delete ui.drafts[key]; delete ui.errors[key];
+  } catch (e) { ui.errors[key] = e.message; }
+  ui.sigs = {}; refresh();
+}
+
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  if (b.dataset.triage) { ui.sent.add(b.dataset.triage); rerenderAll(); await api("/api/triage", { patient_ids: [b.dataset.triage] }).catch(() => ui.sent.delete(b.dataset.triage)); refresh(); }
+  else if (b.id === "all") { const r = await api("/api/triage", { all: true }).catch(() => ({ queued: [] })); r.queued.forEach(p => ui.sent.add(p)); rerenderAll(); refresh(); }
+  else if (b.dataset.blind) {
+    const key = b.dataset.key;
+    try { await api("/api/blind", { proposal_id: +b.dataset.blind, colour: b.dataset.colour, clinician: nurseName() }); delete ui.errors[key]; }
+    catch (e) { ui.errors[key] = e.message; }
+    ui.sigs = {}; refresh();
+  }
+  else if (b.id === "blind") {
+    try { await api("/api/settings", { blind_mode: !(last && last.blind_mode), clinician: nurseName() }); } catch (e) { /* name prompt already shown */ }
+    ui.sigs = {}; refresh();
+  }
+  else if (b.id === "sweep") {
+    const r = await api("/api/sweep", {}).catch(e => ({ message: e.message }));
+    ui.sweepMsg = r.message; ui.sweepMsgUntil = Date.now() + 6000;
+    document.getElementById("sweepinfo").textContent = r.message; refresh();
+  }
+  else if (b.dataset.audit) { openAudit(b.dataset.audit); }
+  else if (b.dataset.seen) {
+    const key = b.dataset.key;
+    try { await api("/api/seen", { patient_id: b.dataset.seen, clinician: nurseName() }); delete ui.errors[key]; }
+    catch (e) { ui.errors[key] = e.message; }
+    ui.sigs = {}; refresh();
+  }
+  else if (b.id === "audit-close") { const d = document.getElementById("audit"); if (d.close) d.close(); else d.removeAttribute("open"); }
+  else if (b.dataset.open) {
+    if (b.dataset.reason && !(ui.drafts[b.dataset.open] || {}).reason) ui.drafts[b.dataset.open] = { ...(ui.drafts[b.dataset.open] || {}), reason: b.dataset.reason };
+    if (b.dataset.preset) { const k = b.dataset.open.replace(/^m-/, ""); ui.drafts[k] = { ...(ui.drafts[k] || {}), colour: b.dataset.preset }; }
+    ui.open[b.dataset.open] = b.dataset.mode || true; rerenderAll(); const f = document.querySelector(`[data-key="${b.dataset.open.replace(/^[mn]-/, "")}"] input, form[data-key="${b.dataset.open}"] input`); if (f) f.focus(); }
+  else if (b.dataset.close) { delete ui.open[b.dataset.close]; delete ui.errors[b.dataset.close.replace(/^[mn]-/, "")]; rerenderAll(); }
+  else if (b.dataset.pick) { ui.drafts[b.dataset.key] = { ...(ui.drafts[b.dataset.key] || {}), colour: b.dataset.pick }; rerenderAll(); }
+  else if (b.dataset.approve) { await decide(b.dataset.key, { proposal_id: +b.dataset.approve, action: "approve" }); }
+});
+
+document.addEventListener("input", ev => {
+  const f = ev.target.closest("form[data-key]");
+  if (f && ev.target.name) ui.drafts[f.dataset.key] = { ...(ui.drafts[f.dataset.key] || {}), [ev.target.name]: ev.target.value };
+});
+
+document.addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const f = ev.target, key = f.dataset.key, d = ui.drafts[key] || {};
+  if (f.dataset.form === "recheck") {
+    try {
+      const vitals = {}; for (const n of ["rr", "hr", "sbp", "temp", "avpu", "mobility"]) if (d[n]) vitals[n] = d[n];
+      await api("/api/recheck", { patient_id: f.dataset.pid, reason: d.reason || "", vitals });
+      ui.sent.add(key); delete ui.open[key]; delete ui.drafts[key]; delete ui.errors[key];
+    } catch (e) { ui.errors[key] = e.message; }
+    rerenderAll(); refresh();
+  } else if (f.dataset.form === "setpri") {
+    if (!d.colour) { ui.errors[key] = "Pick a colour."; rerenderAll(); return; }
+    try {
+      await api("/api/set_priority", { patient_id: f.dataset.pid, colour: d.colour, note: d.note || "", clinician: nurseName() });
+      delete ui.open[key]; delete ui.drafts[key]; delete ui.errors[key];
+    } catch (e) { ui.errors[key] = e.message; }
+    ui.sigs = {}; refresh();
+  } else if (f.dataset.form === "override") {
+    if (!d.colour) { ui.errors[key] = "Pick the colour you are changing it to."; rerenderAll(); return; }
+    await decide(key, { proposal_id: +f.dataset.proposal, action: "override", override_colour: d.colour, note: d.note || "" });
+  } else if (f.dataset.form === "reject") {
+    await decide(key, { proposal_id: +f.dataset.proposal, action: "reject", note: d.note || "" });
+  } else if (f.dataset.form === "note") {
+    await decide(key, { flag_id: +f.dataset.flag, action: "acknowledge", note: d.note || "handled at desk" });
+  }
+});
+
+function tick() { const n = new Date(); document.getElementById("clock").textContent = n.toTimeString().slice(0, 5); }
+tick(); setInterval(tick, 10000);
+refresh(); setInterval(refresh, 1500);
+</script>
+</body>
+</html>

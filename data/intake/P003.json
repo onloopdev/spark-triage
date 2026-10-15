@@ -1,0 +1,17 @@
+{
+  "patient_id": "P003",
+  "age_years": 27,
+  "sex": "F",
+  "complaint": "Pregnant, 32 weeks. Lower abdominal pain since morning.",
+  "nurse_notes": "",
+  "vitals": {
+    "rr": 18,
+    "hr": 96,
+    "sbp": 118,
+    "temp": 37.0,
+    "avpu": "A",
+    "mobility": "walking",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:31:06+00:00"
+}

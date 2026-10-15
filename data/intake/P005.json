@@ -1,0 +1,17 @@
+{
+  "patient_id": "P005",
+  "age_years": 66,
+  "sex": "F",
+  "complaint": "Daughter says she has been confused since yesterday and not eating.",
+  "nurse_notes": "Hot to touch.",
+  "vitals": {
+    "rr": 26,
+    "hr": 124,
+    "sbp": 88,
+    "temp": 39.1,
+    "avpu": "C",
+    "mobility": "with_help",
+    "trauma": false
+  },
+  "arrived_at": "2026-10-15T12:36:06+00:00"
+}
