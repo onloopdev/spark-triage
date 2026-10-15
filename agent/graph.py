@@ -51,6 +51,7 @@ from triage_mcp import desk, store  # noqa: E402
 MODEL = os.environ.get("TRIAGE_MODEL", "qwen2.5:3b")
 NUM_CTX = int(os.environ.get("TRIAGE_NUM_CTX", "6144"))
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY")
 INTAKE_DIR = Path(os.environ.get("TRIAGE_INTAKE_DIR", ROOT / "data" / "intake")).resolve()
 MAX_STEPS = int(os.environ.get("TRIAGE_MAX_STEPS", "14"))
 MAX_VERIFY = 2
@@ -135,7 +136,19 @@ def _noop(event: dict) -> None:
 
 def build_graph(tools: list, seed: int | None, checkpointer, emit=_noop, model: str | None = None) -> Any:
     tools_by_name = {t.name: t for t in tools}
-    llm = ChatOllama(model=model or MODEL, base_url=OLLAMA_HOST, temperature=0, seed=seed, num_ctx=NUM_CTX)
+    client_kwargs = (
+        {"headers": {"Authorization": f"Bearer {OLLAMA_API_KEY}"}}
+        if OLLAMA_API_KEY else None
+    )
+    llm = ChatOllama(
+        model=model or MODEL,
+        base_url=OLLAMA_HOST,
+        temperature=0,
+        seed=seed,
+        num_ctx=NUM_CTX,
+        reasoning=False,
+        client_kwargs=client_kwargs,
+    )
     llm_tools = llm.bind_tools(tools)
 
     async def plan(state: TriageState) -> dict:
@@ -174,6 +187,10 @@ def build_graph(tools: list, seed: int | None, checkpointer, emit=_noop, model: 
         msgs, pid = [], state.get("patient_id")
         for call in last.tool_calls:
             name, args = call["name"], call.get("args") or {}
+            # The MCP schema requires card_json to be a string.
+            # Some models return the same JSON as a dict; serialize it.
+            if name == "register_patient" and isinstance(args.get("card_json"), (dict, list)):
+                args = {**args, "card_json": json.dumps(args["card_json"], ensure_ascii=False)}
             t0, ok = time.time(), True
             tool = tools_by_name.get(name)
             if tool is None:
