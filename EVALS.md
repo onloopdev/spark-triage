@@ -35,7 +35,7 @@ The runner reports under-triage (agent less urgent than the answer key) and over
 
 ### Nurse session (blind mode)
 
->  With a triage nurse, switch on blind mode and let her make her own call on each card before the agent's proposal is revealed. Paste the agreement panel here: calls made, agreed, agent more urgent, agent less urgent, and each disagreement with the final decision. Name the nurse and facility only with their permission.
+>  With a triage nurse, switch on blind mode and let her make her own call on each card before the agent's proposal is revealed. 
 
 ### A failure we have not fixed
 
