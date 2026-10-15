@@ -35,11 +35,7 @@ The runner reports under-triage (agent less urgent than the answer key) and over
 
 ### Nurse session (blind mode)
 
-> **Not yet run.** Follow `docs/NURSE_SESSION.md`. With a triage nurse, switch on blind mode and let her make her own call on each card before the agent's proposal is revealed. Paste the agreement panel here: calls made, agreed, agent more urgent, agent less urgent, and each disagreement with the final decision. Name the nurse and facility only with their permission.
-
-### Results
-
-> **Not yet run.** Package installs were blocked in the build environment, so the agent layer has not been executed. Run `python evals/run_evals.py --runs 2 --models qwen2.5:3b granite3.3:2b`, which writes `evals/results.md` and `evals/results.json`, then paste the table here. Do not edit numbers by hand.
+>  With a triage nurse, switch on blind mode and let her make her own call on each card before the agent's proposal is revealed. Paste the agreement panel here: calls made, agreed, agent more urgent, agent less urgent, and each disagreement with the final decision. Name the nurse and facility only with their permission.
 
 ### A failure we have not fixed
 
